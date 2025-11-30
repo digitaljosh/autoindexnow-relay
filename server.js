@@ -4,6 +4,8 @@ const express = require("express");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const AUTH_KEY = process.env.RELAY_AUTH_KEY;
+
 app.use(express.json());
 
 // Health check
@@ -11,8 +13,19 @@ app.get("/health", (req, res) => {
   res.json({ ok: true, service: "indexnow-relay" });
 });
 
+
+
 // Relay endpoint: forwards the IndexNow payload to api.indexnow.org
 app.post("/indexnow", async (req, res) => {
+
+  // auth check
+  if (AUTH_KEY) {
+    const incoming = req.header("x-relay-auth");
+    if (!incoming || incoming !== AUTH_KEY) {
+      return res.status(401).json({ error: "unauthorized" });
+    }
+  }
+
   const payload = req.body || {};
 
   if (!payload.host || !payload.key || !Array.isArray(payload.urlList)) {
